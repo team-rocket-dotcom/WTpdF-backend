@@ -7,8 +7,10 @@ djangorestframework==3.16.0
 djangorestframework-simplejwt==5.5.0
 google-auth==2.40.2
 google-auth-oauthlib==1.2.2
+gunicorn==23.0.0
 idna==3.10
 oauthlib==3.2.2
+packaging==25.0
 pyasn1==0.6.1
 pyasn1-modules==0.4.2
 pyjwt==2.9.0
