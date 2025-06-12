@@ -6,9 +6,15 @@ from decouple import config
 
 def email_authentication(data):
     email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return None, False, {"error": "Email and password are required."}
 
     existing_user = CustomUser.objects.filter(email=email).first()
     if existing_user:
+        if not existing_user.check_password(password):
+            return None, False, {"error":"Invalid Password"}
         return existing_user, False, None
     
     data['auth_provider'] = 'email'
