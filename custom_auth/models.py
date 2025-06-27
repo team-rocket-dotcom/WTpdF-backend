@@ -33,11 +33,12 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser,  PermissionsMixin):
 
     id = models.CharField(max_length=10, unique=True, primary_key=True)
+    social_id= models.CharField(max_length=230, unique=True,)
 
     email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=250, null=False)
-    last_name = models.CharField(max_length=250, null=False)
-    picture = models.URLField(default=config('USER_PFP'), null=False)
+    first_name = models.CharField(max_length=250)
+    last_name = models.CharField(max_length=250)
+    picture = models.URLField(default=config('USER_PFP'))
 
     auth_provider = models.CharField(
         max_length = 20,
