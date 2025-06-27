@@ -1,48 +1,40 @@
 from rest_framework import serializers
-from .models import CustomUser
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
+ class Meta:
+    model =User
+    fields=('id', 'email', 'first_name', 'last_name', 'auth_provider', 'picture')
 
-    password = serializers.CharField(write_only=True, required=False)
+class RegisterSerialzer(serializers.ModelSerializer):
+    password= serializers.CharField(write_only=True, required=True)
 
     class Meta:
-        model = CustomUser
-        fields = ['id','password', 'email', 'first_name', 'last_name', 'picture']
-        extra_kwargs={
-            'id': {'read_only':True},
-            'picture': {'required':False}
-        }
+        model=User
+        fields=('email', 'password', 'first_name', 'last_name', 'picture', 'social_id')
+    extra_kwargs={
+        'social_id':{'required':False},
+        'picture':{'required':False}
+    }
 
-    def validate(self, data):
-        auth_provider = data.get('auth_provider', 'email')
-
-        if auth_provider == 'email':
-
-            if not data.get('password'):
-                raise serializers.ValidationError({"password":"This field is required."})
-            elif not data.get('first_name'):
-                raise serializers.ValidationError({"first_name":"This field is required."})
-            elif not data.get('last_name'):
-                raise serializers.ValidationError({"last_name":"This field is required."})
-        
-        return data
-    
     def validate_email(self, email):
-        if CustomUser.objects.filter(email=email).exists():
-            raise serializers.ValidationError({"email":"User with this email already exists."})
-        return email
-    
+       email= email.lower()
+       if User.objects.filter(email=email).exists:
+        raise serializers.ValidationError("An User with this email already exists.")
+       return email
+
     def create(self, validated_data):
-        password = validated_data.pop('password', None)
-        auth_provider = validated_data.get('auth_provider')
+       user = User.objects.create_user(**validated_data)
+       return user
+    
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, required=True)
 
-        user = CustomUser(**validated_data)
-
-        if auth_provider == 'email' and password:
-            user.set_password(password)
-
-        else:
-            user.set_unusable_password()
-
-        user.save()
-        return user
+    def validate_email(self, email):
+        email= email.lower()
+        return email
+   
+class GoogleOAuthSerializer(serializers.Serializer):
+   id_token = serializers.CharField(required=True)
