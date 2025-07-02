@@ -13,15 +13,15 @@ class RegisterSerialzer(serializers.ModelSerializer):
     class Meta:
         model=User
         fields=('email', 'password', 'first_name', 'last_name', 'picture', 'social_id')
-    extra_kwargs={
-        'social_id':{'required':False},
-        'picture':{'required':False}
-    }
+        extra_kwargs={
+            'social_id':{'required':False},
+            'picture':{'required':False}
+        }
 
     def validate_email(self, email):
        email= email.lower()
-       if User.objects.filter(email=email).exists:
-        raise serializers.ValidationError("An User with this email already exists.")
+       if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError("An User with this email already exists.")
        return email
 
     def create(self, validated_data):

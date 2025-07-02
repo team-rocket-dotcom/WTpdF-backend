@@ -10,20 +10,22 @@ AUTH_PROVIDERS = (
 
 class CustomUserManager(BaseUserManager):
 
-    def create_user(self, email, auth_provider= 'email', password= None, **extra_fields):
+    def create_user(self, email, auth_provider= 'email', password= None, *args, **kwargs):
         if not email:
             raise ValueError('Email is required')
         
         email = self.normalize_email(email)
-        user = self.model(email=email, auth_provider=auth_provider, **extra_fields)
-
         if auth_provider == 'email':
+            kwargs['social_id'] = email
+            user = self.model(email=email, auth_provider=auth_provider, *args, **kwargs)
+
             if not password:
                 raise ValueError('Password is required for email sign-in.')
             
             user.set_password(password)
 
-        else:
+        elif auth_provider=='google':
+            user= self.model(email=email, auth_provider=auth_provider, *args, **kwargs)
             user.set_unusable_password()
 
         user.save(using= self._db)
@@ -33,7 +35,7 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser,  PermissionsMixin):
 
     id = models.CharField(max_length=10, unique=True, primary_key=True)
-    social_id= models.CharField(max_length=230, unique=True,)
+    social_id= models.CharField(max_length=230, unique=True, default='')
 
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=250)
@@ -49,6 +51,7 @@ class CustomUser(AbstractBaseUser,  PermissionsMixin):
     is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name']
 
     objects = CustomUserManager()
 
