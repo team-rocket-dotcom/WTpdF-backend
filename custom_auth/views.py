@@ -2,6 +2,8 @@ from django.contrib.auth import authenticate
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status, exceptions, permissions
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.exceptions import InvalidToken
 
 from .serializers import UserSerializer, RegisterSerialzer,LoginSerializer, GoogleOAuthSerializer
 from .tokens import get_tokens_for_user
@@ -62,7 +64,7 @@ class GoogleOAuthView(GenericAPIView):
 
         if not user:
             raise exceptions.AuthenticationFailed
-        
+
         refresh_token, access_token = get_tokens_for_user(user=user)
 
         return Response({
@@ -71,3 +73,24 @@ class GoogleOAuthView(GenericAPIView):
             'user': UserSerializer(user).data,
             'message':'Logged in with Google successfully.',
         }, status=status.HTTP_200_OK)
+
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        serializer= self.get_serializer(request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except InvalidToken as e:
+            return Response({
+                'code':'token_not_valid',
+                'message':str(e)
+            },status=status.HTTP_401_UNAUTHORIZED)
+        
+        validated_data= serializer.validated_data
+
+        refresh_token_object = serializer.token_class(request.data['refresh'])
+        user = refresh_token_object.user
+
+        return Response({
+            **validated_data,
+            "user":UserSerializer(user).data
+        },status=status.HTTP_200_OK)
