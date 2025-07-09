@@ -18,16 +18,25 @@ class RegisterSerialzer(serializers.ModelSerializer):
             'picture':{'required':False}
         }
 
-    def validate_email(self, email):
-       email= email.lower()
-       if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError("An User with this email already exists.")
-       return email
+    def validate(self,attrs):
+        email= attrs.get('email').lower()
+        password= attrs.get('password')
+        try:
+            user = User.objects.get(email=email)
+            if user.check_password(password):
+               attrs['user']=user
+            raise serializers.ValidationError('Incorrect Password.')
+        except User.DoesNotExist:
+           pass
+        return attrs
 
     def create(self, validated_data):
+       user = validated_data.pop('user',None)
+       if user:
+          return user
        user = User.objects.create_user(**validated_data)
        return user
-    
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=True)
