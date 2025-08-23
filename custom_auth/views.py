@@ -1,9 +1,11 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status, exceptions, permissions
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 from .serializers import UserSerializer, RegisterSerialzer,LoginSerializer, GoogleOAuthSerializer
 from .tokens import get_tokens_for_user
@@ -76,7 +78,7 @@ class GoogleOAuthView(GenericAPIView):
 
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
-        serializer= self.get_serializer(request.data)
+        serializer= self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
         except InvalidToken as e:
@@ -87,8 +89,14 @@ class CustomTokenRefreshView(TokenRefreshView):
         
         validated_data= serializer.validated_data
 
-        refresh_token_object = serializer.token_class(request.data['refresh'])
-        user = refresh_token_object.user
+        refresh_token_object = RefreshToken(request.data['refresh'])
+        user_id = refresh_token_object.get('user_id')
+
+        User = get_user_model()
+        try:
+            user= User.objects.get(id=user_id)
+        except self.DoesNotExist:
+            raise InvalidToken("User not found")
 
         return Response({
             **validated_data,
